@@ -1,0 +1,6 @@
+data/*
+*.csv
+creds.json
+.ipynb_checkpoints/
+.DS_Store
+.Rhistory
