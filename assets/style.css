@@ -96,12 +96,15 @@ h6 {
     height: flex;
     padding: 0.5px 0.5px 1%;
     color: white;
+    margin-bottom: 0;
 }
 
 .second {
     height: 380px;
-    padding: 1% 1%;
+    padding: 1% 1% 1% 1%;
     color: white;
+    margin-bottom: 0;
+    margin-top: 15px;
 }
 
 .third {

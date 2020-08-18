@@ -11,6 +11,7 @@ import numpy as np
 import random
 import json
 import re
+import os
 from textwrap import dedent
 
 # Plotly
@@ -43,6 +44,7 @@ df = pd.read_csv("data/mapped_ont_bcorps.csv")
 # with open('creds.json') as f:
 #     data = json.load(f)
 # mapbox_access_token = data['map_box_key']
+mapbox_access_token = os.environ['map_box_key']
 
 config={'displayModeBar': False}
 
@@ -72,7 +74,7 @@ app.layout = html.Div([
 
             # User input panel
             html.Div(
-                className="one-third column",
+                className="one-fourth column",
                 children=[
                     # drop-down menus
                     html.Div(
@@ -119,12 +121,15 @@ app.layout = html.Div([
                     # Selected company Info side panel
                     html.Div(
                         id="summary_side_panel",
+                        className="graph__container second",
+                        style={"textAlign": "center",
+                               "fontFamily": "sans-serif"}
                     ),
                 ]
             ),
             # Ontario map container
             html.Div(
-                className="two-thirds column graph__container map",
+                className="one-half column graph__container map",
                 children=[
                     dcc.Graph(
                         id='ont-map',
@@ -234,11 +239,11 @@ def update_map(sel_industry, sel_score):
             autosize=True,
             font={"color": "white"},
             mapbox=dict(
-               # accesstoken=mapbox_access_token,
+                accesstoken=mapbox_access_token,
                 center=dict(
                     lat=latInitial,
                     lon=lonInitial),
-                style="carto-darkmatter", #"dark",
+                style="dark",  #"carto-darkmatter",
                 zoom=zoom,
                 bearing=0
             ),
@@ -315,10 +320,10 @@ def update_side_panel(sel_industry):
 
     # update title of the summary panel by industry
     if sel_industry:
-        title = "in the " + sel_industry + " Industry"
+        title = "the " + sel_industry + " Industry"
         sum_df = df[df.industry_category == sel_industry]
     else:
-        title = "in all Industries"
+        title = "all Industries"
         sum_df = df.copy()
     
     # calculate number of B corporations
@@ -333,18 +338,15 @@ def update_side_panel(sel_industry):
     customers = round(sum_df.impact_area_customers.mean(), 1)
 
     # format html output for the summary stats
-    sum_info = html.Div(
-        className="graph__container second",
-        children=[
-            
+    sum_info = [
             # side panel title
-            html.H4("Summary Statistics for Certified B Corporations",
+            html.H4("Summary Statistics for",
                 style={"marginBottom": 0}),
             html.H4(title, style={"marginTop": 0, "marginBottom": 0}),
-            html.Hr(style={"marginTop": 5, "height": 10}),
+            html.Hr(style={"marginTop": 5}),
             
             # number of certified businesses
-            html.H3(num, style={"marginBottom": 0}),
+            html.H3(num, style={"marginBottom": 0, "marginTop": 5}),
             html.H6("Businesses in Ontario"),
             
             # Impact scores table
@@ -374,9 +376,7 @@ def update_side_panel(sel_industry):
                 ],
                 style={"textAlign": "center"}
             ),
-        ],style={"textAlign": "center",
-                "fontFamily": "sans-serif"}
-    )
+        ]
 
     return sum_info
 
