@@ -32,9 +32,9 @@
     margin-left: 0; }
 
   .one-third.column               { width: 30%; margin-left: 0.5%;}
-  .two-thirds.column              { width: 70%; margin-left: 1%; margin-right: 1%;}
-  .one-half.column                { width: 50%; margin-left: 1%; margin-right: 1%;}  
-  .one-fourth.column              { width: 20%; margin-left: 0.5%;}
+  .two-thirds.column              { width: 60%; margin-left: 0.5%; margin-right: 0.5%;}
+  .one-half.column                { width: 50%; margin-left: 0.5%; margin-right: 0.5%;} 
+  .one-fifth.column               { width: 20%; margin-left: 0.5%; margin-right: 0.5%;}
 
   /* Offsets */
 

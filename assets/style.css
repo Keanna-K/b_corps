@@ -88,7 +88,7 @@ h6 {
 }
 
 .map {
-    height: 600px;
+    height: 570px;
     padding: 1% 1% 1% 1%;
 }
 
@@ -100,7 +100,7 @@ h6 {
 }
 
 .second {
-    height: 380px;
+    height: auto;
     padding: 1% 1% 1% 1%;
     color: white;
     margin-bottom: 0;
@@ -108,7 +108,7 @@ h6 {
 }
 
 .third {
-    height: 550px;
+    height: 570px;
     padding: 0.5px 0.5px;
     color: white;
 }

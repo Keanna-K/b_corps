@@ -41,9 +41,6 @@ server = app.server
 
 df = pd.read_csv("data/mapped_ont_bcorps.csv")
 
-# with open('creds.json') as f:
-#     data = json.load(f)
-# mapbox_access_token = data['map_box_key']
 mapbox_access_token = os.environ['map_box_key']
 
 config={'displayModeBar': False}
@@ -74,7 +71,7 @@ app.layout = html.Div([
 
             # User input panel
             html.Div(
-                className="one-fourth column",
+                className="one-fifth column",
                 children=[
                     # drop-down menus
                     html.Div(
@@ -118,7 +115,7 @@ app.layout = html.Div([
                         ],
                     ),
 
-                    # Selected company Info side panel
+                    # Summary Industry Info side panel
                     html.Div(
                         id="summary_side_panel",
                         className="graph__container second",
@@ -129,13 +126,25 @@ app.layout = html.Div([
             ),
             # Ontario map container
             html.Div(
-                className="one-half column graph__container map",
+                className="two-thirds column graph__container map",
                 children=[
                     dcc.Graph(
                         id='ont-map',
                         config=config
                     ),
                 ],
+            ),
+            # Selected company info side panel
+            html.Div(
+                className="one-fifth column",
+                children=[
+                    html.Div(
+                        className="graph__container third",
+                        id="company_side_panel",
+                        style={"textAlign": "center",
+                               "fontFamily": "sans-serif"},
+                    ),
+                ]
             ),
         ],
     ),
@@ -243,7 +252,7 @@ def update_map(sel_industry, sel_score):
                 center=dict(
                     lat=latInitial,
                     lon=lonInitial),
-                style="dark",  #"carto-darkmatter",
+                style="dark",  
                 zoom=zoom,
                 bearing=0
             ),
@@ -353,7 +362,6 @@ def update_side_panel(sel_industry):
             html.H4("__Average Impact Score__", 
                 style={"marginBottom": 10,  "textDecoration": "underline"}),
             html.Div(
-                className="one-half column",
                 children=[
                     html.H4("Overall Score: "),
                     html.H5("Community: "),
@@ -362,10 +370,9 @@ def update_side_panel(sel_industry):
                     html.H5("Workers: "),
                     html.H5("Customers: ")
                 ],
-                style={"textAlign": "right"},
+                style={"textAlign": "right", "width":"47%", 'display': 'inline-block'},
             ),
             html.Div(
-                className="one-half column",
                 children=[
                     html.H4(total),
                     html.H5(community),
@@ -374,28 +381,36 @@ def update_side_panel(sel_industry):
                     html.H5(workers),
                     html.H5(customers)
                 ],
-                style={"textAlign": "center"}
+                style={"textAlign": "center", "width":"45%", 'display': 'inline-block'}
             ),
         ]
 
     return sum_info
 
-    # if clickData is not None:
-    #     company_name = clickData['points'][0]['customdata'][0]
-    #     company_df = df[df.company_name == company_name]
 
-    #     # format html output for the summary stats
-    #     sum_info = html.Div(
-    #         className="graph__container second",
-    #         children=[
-    #             html.H3(company_name),
-    #             html.H6("Certified B Corporation since:", 
-    #                 style={"marginBottom": 0}),
-    #             html.H6(company_df.date_first_certified),
-    #             html.H6(company_df.industry_category + " | " + company_df.industry)
-    #         ],style={"textAlign": "center",
-    #                 "fontFamily": "sans-serif"}
-    #     )
+# Update the selected company side panel
+@app.callback(
+    Output("company_side_panel", "children"),
+    [Input("ont-map", "clickData")],
+)
+def update_company_side_panel(clickData):
+
+    if clickData is not None:
+        company_name = clickData['points'][0]['customdata'][0]
+        company_df = df[df.company_name == company_name]
+
+        # format html output
+        sum_info = [
+                html.H3(company_name),
+                html.H6("Certified B Corporation since:", 
+                    style={"marginBottom": 0}),
+                html.H6(company_df.date_first_certified),
+                html.H6(company_df.industry_category + " | " + company_df.industry)
+            ]
+    else:
+        sum_info = [html.H3("Select a company on the map to learn more")]
+
+    return sum_info
 
 if __name__ == '__main__':
     app.run_server(debug=True)
