@@ -42,7 +42,7 @@ df = pd.read_csv("data/mapped_ont_bcorps.csv")
 
 with open('creds.json') as f:
     data = json.load(f)
-mapbox_access_token = data['map_box_key']
+#mapbox_access_token = data['map_box_key']
 
 config={'displayModeBar': False}
 
@@ -234,11 +234,11 @@ def update_map(sel_industry, sel_score):
             autosize=True,
             font={"color": "white"},
             mapbox=dict(
-                accesstoken=mapbox_access_token,
+               # accesstoken=mapbox_access_token,
                 center=dict(
                     lat=latInitial,
                     lon=lonInitial),
-                style="dark",
+                style="carto-darkmatter", #"dark",
                 zoom=zoom,
                 bearing=0
             ),
