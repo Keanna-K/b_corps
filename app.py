@@ -40,9 +40,9 @@ server = app.server
 
 df = pd.read_csv("data/mapped_ont_bcorps.csv")
 
-with open('creds.json') as f:
-    data = json.load(f)
-#mapbox_access_token = data['map_box_key']
+# with open('creds.json') as f:
+#     data = json.load(f)
+# mapbox_access_token = data['map_box_key']
 
 config={'displayModeBar': False}
 
