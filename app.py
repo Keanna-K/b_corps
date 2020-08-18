@@ -7,7 +7,6 @@
 
 # Basics
 import pandas as pd
-import geopandas as gpd
 import numpy as np
 import random
 import json
@@ -30,8 +29,9 @@ from dash.dependencies import Input, Output
 ###############################################################################
 
 app = dash.Dash(
-    __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}]
-)
+    __name__, 
+    meta_tags=[{"name": "viewport", "content": "width=device-width"}])
+
 server = app.server
 
 ###############################################################################
@@ -115,6 +115,11 @@ app.layout = html.Div([
                             ),
                         ],
                     ),
+
+                    # Selected company Info side panel
+                    html.Div(
+                        id="summary_side_panel",
+                    ),
                 ]
             ),
             # Ontario map container
@@ -139,6 +144,13 @@ app.layout = html.Div([
             html.Div(
                 className="one-half column graph__container",
                 children=[
+                    html.H4(
+                        className="graph__title",
+                        children=[
+                            html.H4(
+                                id="ind-title"),
+                        ],
+                    ),
                     dcc.Graph(
                         id='ind-graph',
                         config=config
@@ -233,16 +245,25 @@ def update_map(sel_industry, sel_score):
         )
     ))
 
+    fig.update_layout(clickmode='event+select')
+
     return fig
 
 # Update the industry bar chart
 @app.callback(
-    Output("ind-graph", "figure"),
+    [Output("ind-title", 'children'),
+     Output("ind-graph", 'figure')],
     [Input("industry-dropdown", "value")],
 )
 def update_ind_graph(sel_industry):
     
-    counts = df.industry_category.value_counts()
+    if sel_industry:
+        title = "Number of Certified B Corporations in the " + sel_industry + " Industry, by Category"
+        ind_df = df[df.industry_category == sel_industry]
+        counts = ind_df.industry.value_counts()
+    else:
+        title = "Number of Certified B Corporations by Industry"
+        counts = df.industry_category.value_counts()
     ind = list(counts.index)
     
     fig = go.Figure(
@@ -283,6 +304,97 @@ def update_ind_graph(sel_industry):
     fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
     fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
     
-    return fig
+    return title, fig
+
+# Update the summary side panel
+@app.callback(
+    Output("summary_side_panel", "children"),
+    [Input("industry-dropdown", "value")],
+)
+def update_side_panel(sel_industry):
+
+    # update title of the summary panel by industry
+    if sel_industry:
+        title = "in the " + sel_industry + " Industry"
+        sum_df = df[df.industry_category == sel_industry]
+    else:
+        title = "in all Industries"
+        sum_df = df.copy()
+    
+    # calculate number of B corporations
+    num = len(sum_df)
+    
+    # calculate average impact scores
+    total = round(sum_df.overall_score.mean(), 1)
+    community = round(sum_df.impact_area_community.mean(), 1)
+    environment = round(sum_df.impact_area_environment.mean(), 1)
+    governance = round(sum_df.impact_area_governance.mean(), 1)
+    workers = round(sum_df.impact_area_workers.mean(), 1)
+    customers = round(sum_df.impact_area_customers.mean(), 1)
+
+    # format html output for the summary stats
+    sum_info = html.Div(
+        className="graph__container second",
+        children=[
+            
+            # side panel title
+            html.H4("Summary Statistics for Certified B Corporations",
+                style={"marginBottom": 0}),
+            html.H4(title, style={"marginTop": 0, "marginBottom": 0}),
+            html.Hr(style={"marginTop": 5, "height": 10}),
+            
+            # number of certified businesses
+            html.H3(num, style={"marginBottom": 0}),
+            html.H6("Businesses in Ontario"),
+            
+            # Impact scores table
+            html.H4("__Average Impact Score__", 
+                style={"marginBottom": 10,  "textDecoration": "underline"}),
+            html.Div(
+                className="one-half column",
+                children=[
+                    html.H4("Overall Score: "),
+                    html.H5("Community: "),
+                    html.H5("Environment: "),
+                    html.H5("Governance: "),
+                    html.H5("Workers: "),
+                    html.H5("Customers: ")
+                ],
+                style={"textAlign": "right"},
+            ),
+            html.Div(
+                className="one-half column",
+                children=[
+                    html.H4(total),
+                    html.H5(community),
+                    html.H5(environment),
+                    html.H5(governance),
+                    html.H5(workers),
+                    html.H5(customers)
+                ],
+                style={"textAlign": "center"}
+            ),
+        ],style={"textAlign": "center",
+                "fontFamily": "sans-serif"}
+    )
+
+    return sum_info
+
+    # if clickData is not None:
+    #     company_name = clickData['points'][0]['customdata'][0]
+    #     company_df = df[df.company_name == company_name]
+
+    #     # format html output for the summary stats
+    #     sum_info = html.Div(
+    #         className="graph__container second",
+    #         children=[
+    #             html.H3(company_name),
+    #             html.H6("Certified B Corporation since:", 
+    #                 style={"marginBottom": 0}),
+    #             html.H6(company_df.date_first_certified),
+    #             html.H6(company_df.industry_category + " | " + company_df.industry)
+    #         ],style={"textAlign": "center",
+    #                 "fontFamily": "sans-serif"}
+    #     )
 
 app.run_server(debug=True)
