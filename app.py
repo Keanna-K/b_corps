@@ -405,7 +405,33 @@ def update_company_side_panel(clickData):
                 html.H6("Certified B Corporation since:", 
                     style={"marginBottom": 0}),
                 html.H6(company_df.date_first_certified),
-                html.H6(company_df.industry_category + " | " + company_df.industry)
+                html.H6(company_df.industry_category + " | " + company_df.industry),
+                dcc.Markdown("[" + company_df.website + "](http://" + company_df.website + ")"),
+                # Impact scores table
+                html.H4("__Impact Score__", 
+                    style={"marginBottom": 10,  "textDecoration": "underline"}),
+                html.Div(
+                    children=[
+                        html.H4("Overall Score: "),
+                        html.H5("Community: "),
+                        html.H5("Environment: "),
+                        html.H5("Governance: "),
+                        html.H5("Workers: "),
+                        html.H5("Customers: ")
+                    ],
+                    style={"textAlign": "right", "width":"47%", 'display': 'inline-block'},
+                ),
+                html.Div(
+                    children=[
+                        html.H4(company_df.overall_score),
+                        html.H5(company_df.impact_area_community),
+                        html.H5(company_df.impact_area_environment),
+                        html.H5(company_df.impact_area_governance),
+                        html.H5(company_df.impact_area_workers),
+                        html.H5(company_df.impact_area_customers)
+                    ],
+                    style={"textAlign": "center", "width":"45%", 'display': 'inline-block'}
+                ),
             ]
     else:
         sum_info = [html.H3("Select a company on the map to learn more")]
