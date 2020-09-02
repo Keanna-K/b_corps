@@ -22,8 +22,7 @@ h6 {
     color: #ffffff;
     font-family: "Open Sans", sans-serif;
     border-radius: 0.55rem;
-    text-align: center;
-    justify-content: center;
+    text-align: left;
 }
 
 #footer {
@@ -44,6 +43,12 @@ h6 {
     color: white;
     border-color: white;
     border: 0;
+}
+
+.div-for-slider {
+    width: 80%;
+    color: white;
+    padding: 2% 0px 0px 0px;
 }
 
 /* Graphs
@@ -82,9 +87,10 @@ h6 {
 }
 
 #ont-map {
-    height: 100%;
+    height: 92%;
     justify-content: center;
     background-color: #404349;
+    font-family: "Open Sans", sans-serif;
 }
 
 .map {

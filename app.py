@@ -40,6 +40,8 @@ server = app.server
 ###############################################################################
 
 df = pd.read_csv("data/mapped_ont_bcorps.csv")
+years = list(range(df['year_first_certified'].min(),
+                   df['year_first_certified'].max()+1))
 
 mapbox_access_token = os.environ['map_box_key']
 
@@ -48,6 +50,7 @@ config={'displayModeBar': False}
 industries = sorted(df.industry_category.unique())
 categories = ["Overall Score", "Community", "Customers", 
               "Environment", "Governance", "Workers"]
+companies = sorted(df.company_name.unique())            
 
 ###############################################################################
 # LAYOUT                                                                      #
@@ -55,14 +58,57 @@ categories = ["Overall Score", "Community", "Customers",
 
 app.layout = html.Div([
     
-    # Main app header
-    html.Div([
-        # Setting the main title of the Dashboard
-        html.H1(
-            "Ontario B Corporations",
-            className="app__title"
-        )
-    ]),
+    # # Main app header
+    # html.Div([
+    #     # Setting the main title of the Dashboard
+    #     html.H1(
+    #         "Ontario B Corporations",
+    #         className="app__title"
+    #     )
+    # ]),
+
+    # Search bar for Company Name
+    html.Div(
+        className="app__content",
+        children=[
+            # Main app header
+            html.Div(
+                className="four-fifths column",
+                children=[
+                # Setting the main title of the Dashboard
+                    html.H1(
+                        "Ontario B Corporations",
+                        className="app__title"
+                    )
+                ]
+            ),
+            html.Div(
+                className="one-fifth column",
+                children=[
+                    # drop-down menus
+                    html.Div(
+                        className="graph__container first",
+                        children=[
+                            html.P("Search by Company Name:"),
+                            html.Div(
+                                className="div-for-dropdown",
+                                children=[
+                                    dcc.Dropdown(
+                                        id="company-dropdown",
+                                        options=[{'label': i, 'value': i} for i in companies],
+                                        style={
+                                            "border": "0px solid black"
+                                        },
+                                        placeholder='Select a Company'
+                                    )
+                                ],
+                            ),
+                        ],
+                    )
+                ],
+            ),
+        ],
+    ),
 
     # First row 
     html.Div(
@@ -77,6 +123,7 @@ app.layout = html.Div([
                     html.Div(
                         className="graph__container first",
                         children=[
+
                             html.P(
                                 """Select a Business Industry:"""
                             ),
@@ -90,7 +137,7 @@ app.layout = html.Div([
                                         style={
                                             "border": "0px solid black"
                                         },
-                                        placeholder='Select a business industry'
+                                        placeholder='Select a Business Industry'
                                     )
                                 ],
                             ),
@@ -132,6 +179,23 @@ app.layout = html.Div([
                         id='ont-map',
                         config=config
                     ),
+                    # slider
+                    html.Div(
+                        className='div-for-slider',
+                        children=[
+                            dcc.Slider(
+                                id='year-slider',
+                                min=df['year_first_certified'].min(),
+                                max=df['year_first_certified'].max(),
+                                value=2020,
+                                marks={str(year): {
+                                    'label': str(year),
+                                    'style': {'color': 'white'}}
+                                    for year in years},
+                                step=1
+                            )
+                        ],
+                    ),
                 ],
             ),
             # Selected company info side panel
@@ -171,6 +235,24 @@ app.layout = html.Div([
                     ),
                 ],
             ),
+
+            # Cumulative Count of Businesses line plot
+            html.Div(
+                className="one-half column graph__container",
+                children=[
+                    html.H4(
+                        className="graph__title",
+                        children=[
+                            html.H4(
+                                id="cumulative-title"),
+                        ],
+                    ),
+                    dcc.Graph(
+                        id='cumulative-graph',
+                        config=config
+                    ),
+                ],
+            ),
         ]
     ),
 ])
@@ -183,18 +265,23 @@ app.layout = html.Div([
 @app.callback(
     Output("ont-map", "figure"),
     [Input("industry-dropdown", "value"),
-     Input("score-dropdown", "value")],
+     Input("score-dropdown", "value"),
+     Input("year-slider", "value")],
 )
-def update_map(sel_industry, sel_score):
+def update_map(sel_industry, sel_score, sel_year):
     latInitial = 44
     lonInitial = -79
     zoom = 6
     opacity = 0.75
 
+    df_map = df[df['year_certified'] <= sel_year].copy()
+    df_map.drop_duplicates(subset=['company_name'], 
+                           inplace=True,
+                           ignore_index=True)
+
+
     if sel_industry:
-        df_map = df[df.industry_category == sel_industry]
-    else:
-        df_map = df.copy()
+        df_map = df_map[df_map.industry_category == sel_industry]
     
     if (sel_score != 'Overall Score') and (sel_score):
         score_title = sel_score + " Impact Score"
@@ -267,17 +354,23 @@ def update_map(sel_industry, sel_score):
 @app.callback(
     [Output("ind-title", 'children'),
      Output("ind-graph", 'figure')],
-    [Input("industry-dropdown", "value")],
+    [Input("industry-dropdown", "value"),
+     Input("year-slider", "value")],
 )
-def update_ind_graph(sel_industry):
+def update_ind_graph(sel_industry, sel_year):
+
+    ind_df = df[df['year_certified'] <= sel_year].copy()
+    ind_df.drop_duplicates(subset=['company_name'], 
+                           inplace=True,
+                           ignore_index=True)
     
     if sel_industry:
-        title = "Number of Certified B Corporations in the " + sel_industry + " Industry, by Category"
-        ind_df = df[df.industry_category == sel_industry]
+        title = "Number of Certified B Corporations in the " + sel_industry + " Industry in " + str(sel_year) + ", by Category"
+        ind_df = ind_df[ind_df.industry_category == sel_industry]
         counts = ind_df.industry.value_counts()
     else:
-        title = "Number of Certified B Corporations by Industry"
-        counts = df.industry_category.value_counts()
+        title = "Number of Certified B Corporations in " + str(sel_year) + " by Industry"
+        counts = ind_df.industry_category.value_counts()
     ind = list(counts.index)
     
     fig = go.Figure(
@@ -285,7 +378,7 @@ def update_ind_graph(sel_industry):
             y=ind,
             x=counts,
             marker_color='#FFDA67',
-            hovertemplate="%{x}: %{y}<extra></extra>",
+            hovertemplate="%{y}: %{x}<extra></extra>",
             orientation='h'),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
@@ -320,20 +413,66 @@ def update_ind_graph(sel_industry):
     
     return title, fig
 
+# Update the cumulative business count line chart
+@app.callback(
+    [Output("cumulative-title", 'children'),
+     Output("cumulative-graph", 'figure')],
+    [Input("industry-dropdown", "value")],
+)
+def update_cumulative_graph(sel_industry):
+    
+    count_df = df.drop_duplicates(subset=['company_name'],
+                           ignore_index=True)
+
+    title = 'Count of Certified B Corporations in Ontario Over Time'
+    counts = count_df.groupby(['year_first_certified'])['company_name'].count()
+    
+    fig = go.Figure(
+        data=go.Scatter(
+            x=list(counts.index),
+            y=counts.cumsum(),
+            line=dict(width=4),
+            marker=dict(color='#FFDA67', size=10),
+            hovertemplate="%{x}: %{y}<extra></extra>"),
+        layout=go.Layout(
+            margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
+            template='simple_white',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='grey',
+            ))
+    fig.update_layout(
+            xaxis_title="Year",
+            yaxis_title="Number of Corporations",
+            font=dict(
+                color="white",
+                size=14),
+            height=550)
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
+
+    fig
+
+    return title, fig
+
 # Update the summary side panel
 @app.callback(
     Output("summary_side_panel", "children"),
-    [Input("industry-dropdown", "value")],
+    [Input("industry-dropdown", "value"),
+     Input("year-slider", "value")],
 )
-def update_side_panel(sel_industry):
+def update_side_panel(sel_industry, sel_year):
+    
+    sum_df = df[df['year_certified'] <= sel_year]
+    sum_df.drop_duplicates(subset=['company_name'], 
+                           inplace=True,
+                           ignore_index=True)
 
     # update title of the summary panel by industry
     if sel_industry:
-        title = "the " + sel_industry + " Industry"
-        sum_df = df[df.industry_category == sel_industry]
+        title = "the " + sel_industry + " Industry, in " + str(sel_year)
+        sum_df = sum_df[sum_df.industry_category == sel_industry]
     else:
-        title = "all Industries"
-        sum_df = df.copy()
+        title = "all Industries, in " + str(sel_year)
     
     # calculate number of B corporations
     num = len(sum_df)
@@ -359,7 +498,7 @@ def update_side_panel(sel_industry):
             html.H6("Businesses in Ontario"),
             
             # Impact scores table
-            html.H4("__Average Impact Score__", 
+            html.H4("Average Impact Score", 
                 style={"marginBottom": 10,  "textDecoration": "underline"}),
             html.Div(
                 children=[
@@ -391,50 +530,68 @@ def update_side_panel(sel_industry):
 # Update the selected company side panel
 @app.callback(
     Output("company_side_panel", "children"),
-    [Input("ont-map", "clickData")],
+    [Input("ont-map", "clickData"),
+     Input("company-dropdown", "value"),
+     Input("year-slider", "value")],
 )
-def update_company_side_panel(clickData):
+def update_company_side_panel(clickData, sel_company, sel_year):
 
-    if clickData is not None:
-        company_name = clickData['points'][0]['customdata'][0]
-        company_df = df[df.company_name == company_name]
+    if (sel_company is not None) or (clickData is not None):
+        company_df = df[df['year_certified'] <= sel_year]
+        company_df.drop_duplicates(subset=['company_name'], 
+                                   inplace=True,
+                                   ignore_index=True)
+        if sel_company is not None:
+            company_df = company_df[company_df.company_name == sel_company]
+        else:
+            sel_company = clickData['points'][0]['customdata'][0]
+            company_df = company_df[company_df.company_name == sel_company]
 
-        # format html output
-        sum_info = [
-                html.H3(company_name),
-                html.H6("Certified B Corporation since:", 
-                    style={"marginBottom": 0}),
-                html.H6(company_df.date_first_certified),
-                html.H6(company_df.industry_category + " | " + company_df.industry),
-                dcc.Markdown("[" + company_df.website + "](http://" + company_df.website + ")"),
-                # Impact scores table
-                html.H4("__Impact Score__", 
-                    style={"marginBottom": 10,  "textDecoration": "underline"}),
-                html.Div(
-                    children=[
-                        html.H4("Overall Score: "),
-                        html.H5("Community: "),
-                        html.H5("Environment: "),
-                        html.H5("Governance: "),
-                        html.H5("Workers: "),
-                        html.H5("Customers: ")
-                    ],
-                    style={"textAlign": "right", "width":"47%", 'display': 'inline-block'},
-                ),
-                html.Div(
-                    children=[
-                        html.H4(company_df.overall_score),
-                        html.H5(company_df.impact_area_community),
-                        html.H5(company_df.impact_area_environment),
-                        html.H5(company_df.impact_area_governance),
-                        html.H5(company_df.impact_area_workers),
-                        html.H5(company_df.impact_area_customers)
-                    ],
-                    style={"textAlign": "center", "width":"45%", 'display': 'inline-block'}
-                ),
-            ]
+        if len(company_df) > 0:
+            company_df.replace(np.nan, 'N/A ', inplace=True)
+
+            # format html output
+            sum_info = [
+                    html.H3(sel_company, style={"marginBottom": 0}),
+                    html.H4(" (" + str(sel_year) + " Data)"),
+                    html.Hr(style={"marginTop": 5, "marginBottom": 10}),
+                    html.H6("Certified B Corporation since:", 
+                        style={"marginBottom": 0}),
+                    html.H6(company_df.date_first_certified),
+                    html.H6(company_df.industry_category + " | " + company_df.industry),
+                    html.H6('Number of employees: ' + company_df['size'][company_df['size'].index[0]]),
+                    dcc.Markdown("[" + company_df.website + "](http://" + company_df.website + ")"),
+                    # Impact scores table
+                    html.H4("Impact Score", 
+                        style={"marginBottom": 10,  "textDecoration": "underline"}),
+                    html.Div(
+                        children=[
+                            html.H4("Overall Score: "),
+                            html.H5("Community: "),
+                            html.H5("Environment: "),
+                            html.H5("Governance: "),
+                            html.H5("Workers: "),
+                            html.H5("Customers: ")
+                        ],
+                        style={"textAlign": "right", "width":"47%", 'display': 'inline-block'},
+                    ),
+                    html.Div(
+                        children=[
+                            html.H4(company_df.overall_score),
+                            html.H5(company_df.impact_area_community),
+                            html.H5(company_df.impact_area_environment),
+                            html.H5(company_df.impact_area_governance),
+                            html.H5(company_df.impact_area_workers),
+                            html.H5(company_df.impact_area_customers)
+                        ],
+                        style={"textAlign": "center", "width":"45%", 'display': 'inline-block'}
+                    ),
+                ]
+        else:
+            sum_info = [html.H4("Select a company on the map to learn more")]
+
     else:
-        sum_info = [html.H3("Select a company on the map to learn more")]
+        sum_info = [html.H4("Select a company on the map to learn more")]
 
     return sum_info
 
