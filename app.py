@@ -595,5 +595,18 @@ def update_company_side_panel(clickData, sel_company, sel_year):
 
     return sum_info
 
+# update dropdown menu - via click data
+@app.callback(
+    Output("company-dropdown", "value"),
+    [Input("ont-map", "clickData")],
+)
+def update_dropdown(clickData):
+    if clickData is not None:
+        sel_company = clickData['points'][0]['customdata'][0]
+    else:
+        sel_company = None
+    return sel_company
+
+
 if __name__ == '__main__':
     app.run_server(debug=True)
