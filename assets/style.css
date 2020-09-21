@@ -51,6 +51,33 @@ h6 {
     padding: 2% 0px 0px 0px;
 }
 
+/* Tabs
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+
+#tab1.custom-tab, #tab2.custom-tab, #tab3.custom-tab {
+    background-color: #404349;
+    letter-spacing: 1px;
+    color: white;
+    border: 0;
+    border-bottom: whitesmoke solid 1px !important;
+    border-top: whitesmoke solid 1px !important;
+    border-left: whitesmoke solid 1px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    height: 18px;
+}
+
+#mainTabs.tab--selected,
+#tab1.tab--selected, #tab2.tab--selected,
+#tab3.tab--selected {
+    font-weight: bold; 
+    color: white !important;
+    background-color: #a4abb8c7;
+}
+
 /* Graphs
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 .graph__title {

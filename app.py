@@ -8,20 +8,14 @@
 # Basics
 import pandas as pd
 import numpy as np
-import random
-import json
-import re
 import os
-from textwrap import dedent
 
 # Plotly
 import plotly.graph_objects as go
-import plotly.express as px
 
 # Dash
 import dash
 import dash_core_components as dcc
-import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
@@ -30,7 +24,7 @@ from dash.dependencies import Input, Output
 ###############################################################################
 
 app = dash.Dash(
-    __name__, 
+    __name__,
     meta_tags=[{"name": "viewport", "content": "width=device-width"}])
 
 server = app.server
@@ -39,227 +33,439 @@ server = app.server
 # READ-IN DATASETS                                                            #
 ###############################################################################
 
+# ontario b corporations
 df = pd.read_csv("data/mapped_ont_bcorps.csv")
 years = list(range(df['year_first_certified'].min(),
                    df['year_first_certified'].max()+1))
 
 mapbox_access_token = os.environ['map_box_key']
 
-config={'displayModeBar': False}
+config = {'displayModeBar': False}
 
 industries = sorted(df.industry_category.unique())
-categories = ["Overall Score", "Community", "Customers", 
+categories = ["Overall Score", "Community", "Customers",
               "Environment", "Governance", "Workers"]
-companies = sorted(df.company_name.unique())            
+companies = sorted(df.company_name.unique())
+
+# global b corporations
+global_df = pd.read_csv("data/all_bcorps.csv")
+countries = sorted(global_df.country.unique())
 
 ###############################################################################
 # LAYOUT                                                                      #
 ###############################################################################
 
 app.layout = html.Div([
-    
-    # # Main app header
-    # html.Div([
-    #     # Setting the main title of the Dashboard
-    #     html.H1(
-    #         "Ontario B Corporations",
-    #         className="app__title"
-    #     )
-    # ]),
 
-    # Search bar for Company Name
-    html.Div(
-        className="app__content",
-        children=[
-            # Main app header
-            html.Div(
-                className="four-fifths column",
-                children=[
-                # Setting the main title of the Dashboard
-                    html.H1(
-                        "Ontario B Corporations",
-                        className="app__title"
-                    )
-                ]
-            ),
-            html.Div(
-                className="one-fifth column",
-                children=[
-                    # drop-down menus
-                    html.Div(
-                        className="graph__container first",
-                        children=[
-                            html.P("Search by Company Name:"),
-                            html.Div(
-                                className="div-for-dropdown",
-                                children=[
-                                    dcc.Dropdown(
-                                        id="company-dropdown",
-                                        options=[{'label': i, 'value': i} for i in companies],
-                                        style={
-                                            "border": "0px solid black"
-                                        },
-                                        placeholder='Select a Company'
-                                    )
-                                ],
-                            ),
-                        ],
-                    )
-                ],
-            ),
-        ],
-    ),
+    # Main app header
+    html.Div([
+        # Setting the main title of the Dashboard
+        html.H1(
+            "Analysis of B Corporations",
+            style={"textAlign": "center",
+                   "color": "white",
+                   "marginTop": 15,
+                   "marginBottom": 25}
+        )
+    ]),
 
-    # First row 
-    html.Div(
-        className="app__content",
+    dcc.Tabs(
+        id="mainTabs",
         children=[
 
-            # User input panel
-            html.Div(
-                className="one-fifth column",
+            # Define the layout of the first Tab
+            dcc.Tab(
+                label='Ontario B Corps',
+                id='tab1',
+                className='custom-tab',
                 children=[
-                    # drop-down menus
+
+                    # Search bar for Company Name
                     html.Div(
-                        className="graph__container first",
+                        className="app__content",
                         children=[
-
-                            html.P(
-                                """Select a Business Industry:"""
-                            ),
-
+                            # Main app header
                             html.Div(
-                                className="div-for-dropdown",
+                                className="four-fifths column",
                                 children=[
-                                    dcc.Dropdown(
-                                        id="industry-dropdown",
-                                        options=[{'label': i, 'value': i} for i in industries],
-                                        style={
-                                            "border": "0px solid black"
-                                        },
-                                        placeholder='Select a Business Industry'
+                                    # Setting the main title of the Dashboard
+                                    html.H1(
+                                        "Ontario B Corporations",
+                                        className="app__title"
                                     )
-                                ],
+                                ]
                             ),
-
-                            html.P(
-                                """Select an Impact Score Area:"""
-                            ),
-
                             html.Div(
-                                className="div-for-dropdown",
+                                className="one-fifth column",
                                 children=[
-                                    dcc.Dropdown(
-                                        id="score-dropdown",
-                                        options=[{'label': i, 'value': i} for i in categories],
-                                        style={
-                                            "border": "0px solid black"
-                                        },
-                                        placeholder='Select an Impact Area'
+                                    # drop-down menus
+                                    html.Div(
+                                        className="graph__container first",
+                                        children=[
+                                            html.P("Search by Company Name:"),
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="company-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in companies],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select a Company'
+                                                    )
+                                                ],
+                                            ),
+                                        ],
                                     )
                                 ],
                             ),
                         ],
                     ),
 
-                    # Summary Industry Info side panel
+                    # First row
                     html.Div(
-                        id="summary_side_panel",
-                        className="graph__container second",
-                        style={"textAlign": "center",
-                               "fontFamily": "sans-serif"}
+                        className="app__content",
+                        children=[
+
+                            # User input panel
+                            html.Div(
+                                className="one-fifth column",
+                                children=[
+                                    # drop-down menus
+                                    html.Div(
+                                        className="graph__container first",
+                                        children=[
+
+                                            html.P(
+                                                "Select a Business Industry:"
+                                            ),
+
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="industry-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in industries],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select a Business Industry'
+                                                    )
+                                                ],
+                                            ),
+
+                                            html.P(
+                                                """Select an Impact Score Area:"""
+                                            ),
+
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="score-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in categories],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select an Impact Area'
+                                                    )
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+
+                                    # Summary Industry Info side panel
+                                    html.Div(
+                                        id="summary_side_panel",
+                                        className="graph__container second",
+                                        style={"textAlign": "center",
+                                               "fontFamily": "sans-serif"}
+                                    ),
+                                ]
+                            ),
+                            # Ontario map container
+                            html.Div(
+                                className="two-thirds column graph__container map",
+                                children=[
+                                    dcc.Graph(
+                                        id='ont-map',
+                                        config=config
+                                    ),
+                                    # slider
+                                    html.Div(
+                                        className='div-for-slider',
+                                        children=[
+                                            dcc.Slider(
+                                                id='year-slider',
+                                                min=df['year_first_certified'].min(),
+                                                max=df['year_first_certified'].max(),
+                                                value=2020,
+                                                marks={str(year): {
+                                                    'label': str(year),
+                                                    'style': {'color': 'white'}
+                                                    }
+                                                    for year in years},
+                                                step=1
+                                            )
+                                        ],
+                                    ),
+                                ],
+                            ),
+                            # Selected company info side panel
+                            html.Div(
+                                className="one-fifth column",
+                                children=[
+                                    html.Div(
+                                        className="graph__container third",
+                                        id="company_side_panel",
+                                        style={"textAlign": "center",
+                                               "fontFamily": "sans-serif"},
+                                    ),
+                                ]
+                            ),
+                        ],
+                    ),
+
+                    # Second row
+                    html.Div(
+                        className="app__content",
+                        children=[
+
+                            # Industry bar chart container
+                            html.Div(
+                                className="one-half column graph__container",
+                                children=[
+                                    html.H4(
+                                        className="graph__title",
+                                        children=[
+                                            html.H4(
+                                                id="ind-title"),
+                                        ],
+                                    ),
+                                    dcc.Graph(
+                                        id='ind-graph',
+                                        config=config
+                                    ),
+                                ],
+                            ),
+
+                            # Cumulative Count of Businesses line plot
+                            html.Div(
+                                className="one-half column graph__container",
+                                children=[
+                                    html.H4(
+                                        className="graph__title",
+                                        children=[
+                                            html.H4(
+                                                id="cumulative-title"),
+                                        ],
+                                    ),
+                                    dcc.Graph(
+                                        id='cumulative-graph',
+                                        config=config
+                                    ),
+                                ],
+                            ),
+                        ]
+                    ),
+                ],
+            ),
+            # define the layout of the second tab
+            dcc.Tab(
+                label='Global Stats',
+                id='tab2',
+                className='custom-tab',
+                children=[
+
+                    # First row
+                    html.Div(
+                        className="app__content",
+                        children=[
+
+                            # User input panel
+                            html.Div(
+                                className="one-fifth column",
+                                children=[
+                                    # drop-down menus
+                                    html.Div(
+                                        className="graph__container first",
+                                        children=[
+
+                                            html.P(
+                                                """Select a Country:"""
+                                            ),
+
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="country-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in countries],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select a Country',
+                                                    )
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+
+                            # Cumulative Count of Businesses line plot
+                            html.Div(
+                                className="one-half column graph__container",
+                                children=[
+                                    html.H4(
+                                        className="graph__title",
+                                        children=[
+                                            html.H4(
+                                                id="growth-title"),
+                                        ],
+                                    ),
+                                    dcc.Graph(
+                                        id='growth-graph',
+                                        config=config
+                                    ),
+                                ],
+                            ),
+                        ]
+                    ),
+
+                    # Second row
+                    html.Div(
+                        className="app__content",
+                        children=[
+
+                            # User input panel
+                            html.Div(
+                                className="one-fifth column",
+                                children=[
+                                    # drop-down menus
+                                    html.Div(
+                                        className="graph__container first",
+                                        children=[
+
+                                            html.P(
+                                                """Select an Industry:"""
+                                            ),
+
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="ind2-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in industries],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select an industry',
+                                                    )
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+
+                            # Average Impact Score plot
+                            html.Div(
+                                className="one-half column graph__container",
+                                children=[
+                                    html.H4(
+                                        className="graph__title",
+                                        children=[
+                                            html.H4(
+                                                id="avgscore-title"),
+                                        ],
+                                    ),
+                                    dcc.Graph(
+                                        id='avgscore-graph',
+                                        config=config
+                                    ),
+                                ],
+                            ),
+                        ]
+                    ),
+                ],
+            ),
+            # define the layout of the third tab
+            dcc.Tab(
+                label='De-Certified Companies',
+                id='tab3',
+                className='custom-tab',
+                children=[
+
+                    # First row
+                    html.Div(
+                        className="app__content",
+                        children=[
+
+                            # User input panel
+                            html.Div(
+                                className="one-fifth column",
+                                children=[
+                                    # drop-down menus
+                                    html.Div(
+                                        className="graph__container first",
+                                        children=[
+
+                                            html.P(
+                                                """Select an Industry:"""
+                                            ),
+
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="ind3-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in industries],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select an industry',
+                                                    )
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+
+                            # Count of businesses by total time as B Corp
+                            html.Div(
+                                className="one-half column graph__container",
+                                children=[
+                                    html.H4(
+                                        className="graph__title",
+                                        children=[
+                                            html.H4(
+                                                id="totalyears-title"),
+                                        ],
+                                    ),
+                                    dcc.Graph(
+                                        id='totalyears-graph',
+                                        config=config
+                                    ),
+                                ],
+                            ),
+                        ]
                     ),
                 ]
             ),
-            # Ontario map container
-            html.Div(
-                className="two-thirds column graph__container map",
-                children=[
-                    dcc.Graph(
-                        id='ont-map',
-                        config=config
-                    ),
-                    # slider
-                    html.Div(
-                        className='div-for-slider',
-                        children=[
-                            dcc.Slider(
-                                id='year-slider',
-                                min=df['year_first_certified'].min(),
-                                max=df['year_first_certified'].max(),
-                                value=2020,
-                                marks={str(year): {
-                                    'label': str(year),
-                                    'style': {'color': 'white'}}
-                                    for year in years},
-                                step=1
-                            )
-                        ],
-                    ),
-                ],
-            ),
-            # Selected company info side panel
-            html.Div(
-                className="one-fifth column",
-                children=[
-                    html.Div(
-                        className="graph__container third",
-                        id="company_side_panel",
-                        style={"textAlign": "center",
-                               "fontFamily": "sans-serif"},
-                    ),
-                ]
-            ),
-        ],
-    ),
 
-    # Second row 
-    html.Div(
-        className="app__content",
-        children=[
-
-            # Industry bar chart container
-            html.Div(
-                className="one-half column graph__container",
-                children=[
-                    html.H4(
-                        className="graph__title",
-                        children=[
-                            html.H4(
-                                id="ind-title"),
-                        ],
-                    ),
-                    dcc.Graph(
-                        id='ind-graph',
-                        config=config
-                    ),
-                ],
-            ),
-
-            # Cumulative Count of Businesses line plot
-            html.Div(
-                className="one-half column graph__container",
-                children=[
-                    html.H4(
-                        className="graph__title",
-                        children=[
-                            html.H4(
-                                id="cumulative-title"),
-                        ],
-                    ),
-                    dcc.Graph(
-                        id='cumulative-graph',
-                        config=config
-                    ),
-                ],
-            ),
-        ]
-    ),
+        ]),
 ])
 
 ###############################################################################
 # UPDATES + CALLBACKS                                                         #
 ###############################################################################
+###############################################################################
+# TAB 1 - UPDATES
+###############################################################################
+
 
 # Update the Ontario map
 @app.callback(
@@ -275,14 +481,13 @@ def update_map(sel_industry, sel_score, sel_year):
     opacity = 0.75
 
     df_map = df[df['year_certified'] <= sel_year].copy()
-    df_map.drop_duplicates(subset=['company_name'], 
+    df_map.drop_duplicates(subset=['company_name'],
                            inplace=True,
                            ignore_index=True)
 
-
     if sel_industry:
         df_map = df_map[df_map.industry_category == sel_industry]
-    
+
     if (sel_score != 'Overall Score') and (sel_score):
         score_title = sel_score + " Impact Score"
         score_col = "impact_area_" + str.lower(sel_score)
@@ -294,7 +499,7 @@ def update_map(sel_industry, sel_score, sel_year):
                 'Business Name': df_map.company_name,
                 'Industry': df_map.industry_category,
                 'Cert': df_map.date_first_certified,
-                'Impact Score' : df_map.overall_score})
+                'Impact Score': df_map.overall_score})
 
     fig = (go.Figure(
             data=go.Scattermapbox(
@@ -330,25 +535,26 @@ def update_map(sel_industry, sel_score, sel_year):
                     "<extra></extra>"
             ),
 
-        layout=go.Layout(
-            margin={'l': 0, 'r': 0, 't': 0, 'b': 0},
-            autosize=True,
-            font={"color": "white"},
-            mapbox=dict(
-                accesstoken=mapbox_access_token,
-                center=dict(
-                    lat=latInitial,
-                    lon=lonInitial),
-                style="dark",  
-                zoom=zoom,
-                bearing=0
-            ),
-        )
+            layout=go.Layout(
+                margin={'l': 0, 'r': 0, 't': 0, 'b': 0},
+                autosize=True,
+                font={"color": "white"},
+                mapbox=dict(
+                    accesstoken=mapbox_access_token,
+                    center=dict(
+                        lat=latInitial,
+                        lon=lonInitial),
+                    style="dark",
+                    zoom=zoom,
+                    bearing=0
+                ),
+            )
     ))
 
     fig.update_layout(clickmode='event+select')
 
     return fig
+
 
 # Update the industry bar chart
 @app.callback(
@@ -360,10 +566,10 @@ def update_map(sel_industry, sel_score, sel_year):
 def update_ind_graph(sel_industry, sel_year):
 
     ind_df = df[df['year_certified'] <= sel_year].copy()
-    ind_df.drop_duplicates(subset=['company_name'], 
+    ind_df.drop_duplicates(subset=['company_name'],
                            inplace=True,
                            ignore_index=True)
-    
+
     if sel_industry:
         title = "Number of Certified B Corporations in the " + sel_industry + " Industry in " + str(sel_year) + ", by Category"
         ind_df = ind_df[ind_df.industry_category == sel_industry]
@@ -372,7 +578,7 @@ def update_ind_graph(sel_industry, sel_year):
         title = "Number of Certified B Corporations in " + str(sel_year) + " by Industry"
         counts = ind_df.industry_category.value_counts()
     ind = list(counts.index)
-    
+
     fig = go.Figure(
         data=go.Bar(
             y=ind,
@@ -395,11 +601,11 @@ def update_ind_graph(sel_industry, sel_year):
                     yanchor="middle",
                     showarrow=False,
                 )
-            for xi, yi in zip(counts, ind)
+                for xi, yi in zip(counts, ind)
             ],
         )
     )
-    
+
     fig.update_layout(
             barmode='group',
             xaxis_title="Number of Businesses",
@@ -410,8 +616,9 @@ def update_ind_graph(sel_industry, sel_year):
             height=550)
     fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
     fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
-    
+
     return title, fig
+
 
 # Update the cumulative business count line chart
 @app.callback(
@@ -420,13 +627,13 @@ def update_ind_graph(sel_industry, sel_year):
     [Input("industry-dropdown", "value")],
 )
 def update_cumulative_graph(sel_industry):
-    
+
     count_df = df.drop_duplicates(subset=['company_name'],
-                           ignore_index=True)
+                                  ignore_index=True)
 
     title = 'Count of Certified B Corporations in Ontario Over Time'
     counts = count_df.groupby(['year_first_certified'])['company_name'].count()
-    
+
     fig = go.Figure(
         data=go.Scatter(
             x=list(counts.index),
@@ -439,7 +646,7 @@ def update_cumulative_graph(sel_industry):
             template='simple_white',
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='grey',
-            ))
+        ))
     fig.update_layout(
             xaxis_title="Year",
             yaxis_title="Number of Corporations",
@@ -454,6 +661,7 @@ def update_cumulative_graph(sel_industry):
 
     return title, fig
 
+
 # Update the summary side panel
 @app.callback(
     Output("summary_side_panel", "children"),
@@ -461,9 +669,9 @@ def update_cumulative_graph(sel_industry):
      Input("year-slider", "value")],
 )
 def update_side_panel(sel_industry, sel_year):
-    
+
     sum_df = df[df['year_certified'] <= sel_year]
-    sum_df.drop_duplicates(subset=['company_name'], 
+    sum_df.drop_duplicates(subset=['company_name'],
                            inplace=True,
                            ignore_index=True)
 
@@ -473,10 +681,10 @@ def update_side_panel(sel_industry, sel_year):
         sum_df = sum_df[sum_df.industry_category == sel_industry]
     else:
         title = "all Industries, in " + str(sel_year)
-    
+
     # calculate number of B corporations
     num = len(sum_df)
-    
+
     # calculate average impact scores
     total = round(sum_df.overall_score.mean(), 1)
     community = round(sum_df.impact_area_community.mean(), 1)
@@ -489,17 +697,17 @@ def update_side_panel(sel_industry, sel_year):
     sum_info = [
             # side panel title
             html.H4("Summary Statistics for",
-                style={"marginBottom": 0}),
+                    style={"marginBottom": 0}),
             html.H4(title, style={"marginTop": 0, "marginBottom": 0}),
             html.Hr(style={"marginTop": 5}),
-            
+
             # number of certified businesses
             html.H3(num, style={"marginBottom": 0, "marginTop": 5}),
             html.H6("Businesses in Ontario"),
-            
+
             # Impact scores table
-            html.H4("Average Impact Score", 
-                style={"marginBottom": 10,  "textDecoration": "underline"}),
+            html.H4("Average Impact Score",
+                    style={"marginBottom": 10, "textDecoration": "underline"}),
             html.Div(
                 children=[
                     html.H4("Overall Score: "),
@@ -509,7 +717,9 @@ def update_side_panel(sel_industry, sel_year):
                     html.H5("Workers: "),
                     html.H5("Customers: ")
                 ],
-                style={"textAlign": "right", "width":"47%", 'display': 'inline-block'},
+                style={"textAlign": "right",
+                       "width": "47%",
+                       'display': 'inline-block'},
             ),
             html.Div(
                 children=[
@@ -520,7 +730,9 @@ def update_side_panel(sel_industry, sel_year):
                     html.H5(workers),
                     html.H5(customers)
                 ],
-                style={"textAlign": "center", "width":"45%", 'display': 'inline-block'}
+                style={"textAlign": "center",
+                       "width": "45%",
+                       'display': 'inline-block'}
             ),
         ]
 
@@ -538,7 +750,7 @@ def update_company_side_panel(clickData, sel_company, sel_year):
 
     if (sel_company is not None) or (clickData is not None):
         company_df = df[df['year_certified'] <= sel_year]
-        company_df.drop_duplicates(subset=['company_name'], 
+        company_df.drop_duplicates(subset=['company_name'],
                                    inplace=True,
                                    ignore_index=True)
         if sel_company is not None:
@@ -555,15 +767,16 @@ def update_company_side_panel(clickData, sel_company, sel_year):
                     html.H3(sel_company, style={"marginBottom": 0}),
                     html.H4(" (" + str(sel_year) + " Data)"),
                     html.Hr(style={"marginTop": 5, "marginBottom": 10}),
-                    html.H6("Certified B Corporation since:", 
-                        style={"marginBottom": 0}),
+                    html.H6("Certified B Corporation since:",
+                            style={"marginBottom": 0}),
                     html.H6(company_df.date_first_certified),
                     html.H6(company_df.industry_category + " | " + company_df.industry),
                     html.H6('Number of employees: ' + company_df['size'][company_df['size'].index[0]]),
                     dcc.Markdown("[" + company_df.website + "](http://" + company_df.website + ")"),
                     # Impact scores table
-                    html.H4("Impact Score", 
-                        style={"marginBottom": 10,  "textDecoration": "underline"}),
+                    html.H4("Impact Score",
+                            style={"marginBottom": 10,
+                                   "textDecoration": "underline"}),
                     html.Div(
                         children=[
                             html.H4("Overall Score: "),
@@ -573,7 +786,9 @@ def update_company_side_panel(clickData, sel_company, sel_year):
                             html.H5("Workers: "),
                             html.H5("Customers: ")
                         ],
-                        style={"textAlign": "right", "width":"47%", 'display': 'inline-block'},
+                        style={"textAlign": "right",
+                               "width": "47%",
+                               'display': 'inline-block'},
                     ),
                     html.Div(
                         children=[
@@ -584,7 +799,9 @@ def update_company_side_panel(clickData, sel_company, sel_year):
                             html.H5(company_df.impact_area_workers),
                             html.H5(company_df.impact_area_customers)
                         ],
-                        style={"textAlign": "center", "width":"45%", 'display': 'inline-block'}
+                        style={"textAlign": "center",
+                               "width": "45%",
+                               'display': 'inline-block'}
                     ),
                 ]
         else:
@@ -594,6 +811,7 @@ def update_company_side_panel(clickData, sel_company, sel_year):
         sum_info = [html.H4("Select a company on the map to learn more")]
 
     return sum_info
+
 
 # update dropdown menu - via click data
 @app.callback(
@@ -606,6 +824,170 @@ def update_dropdown(clickData):
     else:
         sel_company = None
     return sel_company
+
+###############################################################################
+# TAB 2 - UPDATES
+###############################################################################
+
+
+# Update the growth of b corps line chart
+@app.callback(
+    [Output("growth-title", 'children'),
+     Output("growth-graph", 'figure')],
+    [Input("country-dropdown", "value")],
+)
+def update_growth_graph(sel_country):
+
+    if sel_country:
+        # filter by country
+        new_df = global_df[global_df.country == sel_country]
+        title = 'Count of Certified B Corporations in ' + sel_country + ' Over Time'
+    else:
+        new_df = global_df.copy()
+        title = 'Global Count of Certified B Corporations Over Time'
+
+    count_df = new_df.drop_duplicates(subset=['company_name'],
+                                      ignore_index=True)
+    counts = count_df.groupby(['year_first_certified'])['company_name'].count()
+    de_cert = count_df[count_df.current_status == 'de-certified']
+    de_cert_counts = de_cert.groupby(['year_certified'])['company_name'].count()
+    de_cert_counts.index += 1
+    li_dif = [i for i in counts.index if i not in de_cert_counts.index]
+    for i in li_dif:
+        de_cert_counts[i] = 0
+    de_cert_counts = de_cert_counts.sort_index()
+
+    # subtract de-certified B corps from total
+    counts = counts.cumsum() - de_cert_counts.cumsum()
+
+    fig = go.Figure(
+        data=go.Scatter(
+            x=list(counts.index),
+            y=counts,
+            line=dict(width=4),
+            marker=dict(color='#FFDA67', size=10),
+            hovertemplate="%{x}: %{y}<extra></extra>"),
+        layout=go.Layout(
+            margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
+            template='simple_white',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='grey',
+            ))
+    fig.update_layout(
+            xaxis_title="Year",
+            yaxis_title="Number of Corporations",
+            font=dict(
+                color="white",
+                size=14),
+            height=550)
+    fig.update_xaxes(showline=True,
+                     linewidth=2,
+                     linecolor='white',
+                     range=[2006, 2021])
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
+
+    fig
+
+    return title, fig
+
+
+# Update the avg score chart
+@app.callback(
+    [Output("avgscore-title", 'children'),
+     Output("avgscore-graph", 'figure')],
+    [Input("ind2-dropdown", "value")],
+)
+def update_avgscore_graph(sel_ind):
+
+    new_df = global_df[global_df.certified_years >= 0]
+
+    if sel_ind:
+        # filter by industry
+        new_df = new_df[new_df.industry_category == sel_ind]
+        title = 'Average Impact Score by Years as Certified B Corporation'
+    else:
+        title = 'Average Impact Score by Years as Certified B Corporation'
+
+    scores = new_df.groupby(['certified_years'])['overall_score'].mean()
+
+    fig = go.Figure(
+        data=go.Scatter(
+            x=list(scores.index),
+            y=scores,
+            line=dict(width=4),
+            marker=dict(color='#FFDA67', size=10),
+            hovertemplate="%{x}: %{y}<extra></extra>"),
+        layout=go.Layout(
+            margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
+            template='simple_white',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='grey',
+            ))
+    fig.update_layout(
+            xaxis_title="Years as Certified B Corporation",
+            yaxis_title="Average Impact Score",
+            font=dict(
+                color="white",
+                size=14),
+            height=550)
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
+
+    return title, fig
+
+###############################################################################
+# TAB 3 - UPDATES
+###############################################################################
+
+
+# Update the count of businesses by time as B-corp
+@app.callback(
+    [Output("totalyears-title", 'children'),
+     Output("totalyears-graph", 'figure')],
+    [Input("ind3-dropdown", "value")],
+)
+def update_totalyears_graph(sel_ind):
+
+    new_df = global_df[global_df.certified_years >= 0]
+    new_df = new_df[new_df.current_status == 'de-certified']
+    new_df.drop_duplicates(subset=['company_name'],
+                           inplace=True,
+                           ignore_index=True)
+
+    if sel_ind:
+        # filter by industry
+        new_df = new_df[new_df.industry_category == sel_ind]
+        title = 'Count of B corporations by Number of Years until De-Certification'
+    else:
+        title = 'Count of B corporations by Number of Years until De-Certification'
+
+    counts = new_df.groupby(['certified_years'])['company_name'].count()
+    counts.index += 1
+
+    fig = go.Figure(
+        data=go.Scatter(
+            x=list(counts.index),
+            y=counts,
+            line=dict(width=4),
+            marker=dict(color='#FFDA67', size=10),
+            hovertemplate="%{x}: %{y}<extra></extra>"),
+        layout=go.Layout(
+            margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
+            template='simple_white',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='grey',
+            ))
+    fig.update_layout(
+            xaxis_title="Years as Certified B Corporation (before de-certification)",
+            yaxis_title="Number of B Corporations",
+            font=dict(
+                color="white",
+                size=14),
+            height=550)
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
+
+    return title, fig
 
 
 if __name__ == '__main__':
