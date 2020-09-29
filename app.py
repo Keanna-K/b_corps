@@ -46,10 +46,26 @@ industries = sorted(df.industry_category.unique())
 categories = ["Overall Score", "Community", "Customers",
               "Environment", "Governance", "Workers"]
 companies = sorted(df.company_name.unique())
+start_years = ['Total', 2007, 2008, 2009, 2010, 2011, 2012, 
+               2013, 2014, 2015, 2016, 2017]
 
 # global b corporations
 global_df = pd.read_csv("data/all_bcorps.csv")
 countries = sorted(global_df.country.unique())
+
+# Create dataset with in-between years
+all_years_df = global_df.copy()
+for company in all_years_df.company_name.unique():
+    new_df = all_years_df[all_years_df.company_name == company]
+    year_list = list(new_df.certified_years)
+    if len(year_list) > 0:
+        all_year_list = [x for x in range(min(year_list), max(year_list))]
+        missing_years = [x for x in all_year_list if x not in year_list]
+        for x in missing_years:
+            fill = max([year for year in year_list if year < x])
+            new_row = new_df[new_df.certified_years == fill]
+            new_row.certified_years = x
+            all_years_df = all_years_df.append(new_row, ignore_index=True)
 
 ###############################################################################
 # LAYOUT                                                                      #
@@ -365,6 +381,24 @@ app.layout = html.Div([
                                                     )
                                                 ],
                                             ),
+
+                                            html.P(
+                                                """Select Business Start Year:"""
+                                            ),
+
+                                            html.Div(
+                                                children=[
+                                                    dcc.Checklist(
+                                                        id="year-checklist",
+                                                        options=[{'label': i, 'value': i} for i in start_years],
+                                                        value=['Total'],
+                                                        style={
+                                                            "color": "white",
+                                                        },
+                                                        labelStyle = {'display': 'inline-block', 'width':'30%'}
+                                                    )
+                                                ],
+                                            ),
                                         ],
                                     ),
                                 ],
@@ -447,6 +481,118 @@ app.layout = html.Div([
                                     ),
                                     dcc.Graph(
                                         id='totalyears-graph',
+                                        config=config
+                                    ),
+                                ],
+                            ),
+                        ]
+                    ),
+
+                    # Second row
+                    html.Div(
+                        className="app__content",
+                        children=[
+
+                            # User input panel
+                            html.Div(
+                                className="one-fifth column",
+                                children=[
+                                    # drop-down menus
+                                    html.Div(
+                                        className="graph__container first",
+                                        children=[
+
+                                            html.P(
+                                                """Select an Industry:"""
+                                            ),
+
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="ind4-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in industries],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select an industry',
+                                                    )
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+
+                            # Score by total time as B Corp
+                            html.Div(
+                                className="one-half column graph__container",
+                                children=[
+                                    html.H4(
+                                        className="graph__title",
+                                        children=[
+                                            html.H4(
+                                                id="decert-score-title"),
+                                        ],
+                                    ),
+                                    dcc.Graph(
+                                        id='decert-score-graph',
+                                        config=config
+                                    ),
+                                ],
+                            ),
+                        ]
+                    ),
+
+                    # Third row
+                    html.Div(
+                        className="app__content",
+                        children=[
+
+                            # User input panel
+                            html.Div(
+                                className="one-fifth column",
+                                children=[
+                                    # drop-down menus
+                                    html.Div(
+                                        className="graph__container first",
+                                        children=[
+
+                                            html.P(
+                                                """Select an Industry:"""
+                                            ),
+
+                                            html.Div(
+                                                className="div-for-dropdown",
+                                                children=[
+                                                    dcc.Dropdown(
+                                                        id="ind5-dropdown",
+                                                        options=[{'label': i, 'value': i} for i in industries],
+                                                        style={
+                                                            "border": "0px solid black"
+                                                        },
+                                                        placeholder='Select an industry',
+                                                    )
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            ),
+
+                            # Size by total time as B Corp
+                            html.Div(
+                                className="one-half column graph__container",
+                                children=[
+                                    html.H4(
+                                        className="graph__title",
+                                        children=[
+                                            html.H4(
+                                                id="decert-size-title"),
+                                        ],
+                                    ),
+                                    dcc.Graph(
+                                        id='decert-size-graph',
                                         config=config
                                     ),
                                 ],
@@ -895,11 +1041,12 @@ def update_growth_graph(sel_country):
 @app.callback(
     [Output("avgscore-title", 'children'),
      Output("avgscore-graph", 'figure')],
-    [Input("ind2-dropdown", "value")],
+    [Input("ind2-dropdown", "value"),
+     Input("year-checklist", "value")],
 )
-def update_avgscore_graph(sel_ind):
+def update_avgscore_graph(sel_ind, sel_years):
 
-    new_df = global_df[global_df.certified_years >= 0]
+    new_df = all_years_df[all_years_df.certified_years >= 0]
 
     if sel_ind:
         # filter by industry
@@ -908,21 +1055,30 @@ def update_avgscore_graph(sel_ind):
     else:
         title = 'Average Impact Score by Years as Certified B Corporation'
 
-    scores = new_df.groupby(['certified_years'])['overall_score'].mean()
-
     fig = go.Figure(
-        data=go.Scatter(
-            x=list(scores.index),
-            y=scores,
-            line=dict(width=4),
-            marker=dict(color='#FFDA67', size=10),
-            hovertemplate="%{x}: %{y}<extra></extra>"),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
             template='simple_white',
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='grey',
             ))
+    
+    if sel_years:
+        for x in sel_years:
+            if x == 'Total':
+                scores = new_df.groupby(['certified_years'])['overall_score'].mean()
+            else:
+                year_df = new_df[new_df.year_first_certified == x]
+                scores = year_df.groupby(['certified_years'])['overall_score'].mean()
+
+            fig.add_trace(go.Scatter(
+                x=list(scores.index),
+                y=scores,
+                line=dict(width=4),
+                marker=dict(size=10),
+                name=x,
+                hovertemplate="%{x}: %{y}<extra></extra>"),)
+    
     fig.update_layout(
             xaxis_title="Years as Certified B Corporation",
             yaxis_title="Average Impact Score",
@@ -931,7 +1087,7 @@ def update_avgscore_graph(sel_ind):
                 size=14),
             height=550)
     fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
-    fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='white', range=[80,180])
 
     return title, fig
 
@@ -957,9 +1113,9 @@ def update_totalyears_graph(sel_ind):
     if sel_ind:
         # filter by industry
         new_df = new_df[new_df.industry_category == sel_ind]
-        title = 'Count of B corporations by Number of Years until De-Certification'
+        title = 'Count of B corporations by Number of Years Before De-Certification, ' + sel_ind
     else:
-        title = 'Count of B corporations by Number of Years until De-Certification'
+        title = 'Count of B corporations by Number of Years Before De-Certification, all Industries'
 
     counts = new_df.groupby(['certified_years'])['company_name'].count()
     counts.index += 1
@@ -988,6 +1144,99 @@ def update_totalyears_graph(sel_ind):
     fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
 
     return title, fig
+
+# Update the score by time as B-corp graph
+@app.callback(
+    [Output("decert-score-title", 'children'),
+     Output("decert-score-graph", 'figure')],
+    [Input("ind4-dropdown", "value")],
+)
+def update_decert_score_graph(sel_ind):
+
+    new_df = all_years_df[all_years_df.certified_years >= 0]
+    new_df = new_df[new_df.current_status == 'de-certified']
+
+    if sel_ind:
+        # filter by industry
+        new_df = new_df[new_df.industry_category == sel_ind]
+        title = 'Average Impact Score by Number of Years before De-Certification, ' + sel_ind
+    else:
+        title = 'Average Impact Score by Number of Years before De-Certification, all Industries'
+
+    score = new_df.groupby(['certified_years'])['overall_score'].mean()
+    score.index += 1
+
+    fig = go.Figure(
+        data=go.Scatter(
+            x=list(score.index),
+            y=score,
+            line=dict(width=4),
+            marker=dict(color='#FFDA67', size=10),
+            hovertemplate="%{x}: %{y}<extra></extra>"),
+        layout=go.Layout(
+            margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
+            template='simple_white',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='grey',
+            ))
+    fig.update_layout(
+            xaxis_title="Years as Certified B Corporation (before de-certification)",
+            yaxis_title="Overall Impact Score",
+            font=dict(
+                color="white",
+                size=14),
+            height=550)
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='white', range=[80,180])
+
+    return title, fig
+
+# Update the size by time as B-corp graph
+@app.callback(
+    [Output("decert-size-title", 'children'),
+     Output("decert-size-graph", 'figure')],
+    [Input("ind5-dropdown", "value")],
+)
+def update_decert_size_graph(sel_ind):
+
+    new_df = all_years_df[all_years_df.certified_years >= 0]
+    new_df = new_df[new_df.current_status == 'de-certified']
+
+    if sel_ind:
+        # filter by industry
+        new_df = new_df[new_df.industry_category == sel_ind]
+        title = 'Average Company Size by Number of Years before De-Certification, ' + sel_ind
+    else:
+        title = 'Average Company Size by Number of Years before De-Certification, all Industries'
+
+    size = new_df.groupby(['certified_years'])['size'].apply(lambda x: pd.Series.mode(x)[0])
+    size.index += 1
+
+    fig = go.Figure(
+        data=go.Scatter(
+            x=list(size.index),
+            y=size,
+            line=dict(width=4),
+            marker=dict(color='#FFDA67', size=10),
+            hovertemplate="%{x}: %{y}<extra></extra>"),
+        layout=go.Layout(
+            margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
+            template='simple_white',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='grey',
+            ))
+    fig.update_layout(
+            xaxis_title="Years as Certified B Corporation (before de-certification)",
+            yaxis_title="Average Number of Employees",
+            font=dict(
+                color="white",
+                size=14),
+            height=550)
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='white')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='white')
+
+    return title, fig
+
 
 
 if __name__ == '__main__':
