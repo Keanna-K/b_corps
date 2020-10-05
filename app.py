@@ -716,7 +716,7 @@ def update_ind_graph(sel_industry, sel_year):
             y=ind,
             x=counts,
             marker_color='#FFDA67',
-            hovertemplate="%{y}: %{x}<extra></extra>",
+            hovertemplate="<b>%{y}:</b> %{x}<extra></extra>",
             orientation='h'),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
@@ -772,7 +772,7 @@ def update_cumulative_graph(sel_industry):
             y=counts.cumsum(),
             line=dict(width=4),
             marker=dict(color='#FFDA67', size=10),
-            hovertemplate="%{x}: %{y}<extra></extra>"),
+            hovertemplate="<b>%{x}:</b> %{y}<extra></extra>"),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
             template='simple_white',
@@ -998,7 +998,7 @@ def update_growth_graph(sel_country):
             y=counts,
             line=dict(width=4),
             marker=dict(color='#FFDA67', size=10),
-            hovertemplate="%{x}: %{y}<extra></extra>"),
+            hovertemplate="<b>%{x}:</b> %{y}<extra></extra>"),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
             template='simple_white',
@@ -1063,7 +1063,7 @@ def update_avgscore_graph(sel_ind, sel_years):
                 line=dict(width=4),
                 marker=dict(size=10),
                 name=x,
-                hovertemplate="%{x}: %{y}<extra></extra>"),)
+                hovertemplate="<b>%{x} year(s):</b> %{y}<extra></extra>"),)
     
     fig.update_layout(
             xaxis_title="Years as Certified B Corporation",
@@ -1107,12 +1107,11 @@ def update_totalyears_graph(sel_ind):
     counts.index += 1
 
     fig = go.Figure(
-        data=go.Scatter(
+        data=go.Bar(
             x=list(counts.index),
             y=counts,
-            line=dict(width=4),
-            marker=dict(color='#FFDA67', size=10),
-            hovertemplate="%{x}: %{y}<extra></extra>"),
+            marker=dict(color='#FFDA67'),
+            hovertemplate="<b>%{x} year(s):</b> %{y}<extra></extra>"),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
             template='simple_white',
@@ -1120,6 +1119,7 @@ def update_totalyears_graph(sel_ind):
             plot_bgcolor='grey',
             ))
     fig.update_layout(
+            barmode='group',
             xaxis_title="Years as Certified B Corporation (before de-certification)",
             yaxis_title="Number of B Corporations",
             font=dict(
@@ -1141,6 +1141,9 @@ def update_decert_score_graph(sel_ind):
 
     new_df = global_df[global_df.certified_years >= 0]
     new_df = new_df[new_df.current_status == 'de-certified']
+    new_df.drop_duplicates(subset=['company_name'],
+                           inplace=True,
+                           ignore_index=True)
 
     if sel_ind:
         # filter by industry
@@ -1158,7 +1161,7 @@ def update_decert_score_graph(sel_ind):
             y=score,
             line=dict(width=4),
             marker=dict(color='#FFDA67', size=10),
-            hovertemplate="%{x}: %{y}<extra></extra>"),
+            hovertemplate="<b>%{x} year(s):</b> %{y}<extra></extra>"),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
             template='simple_white',
@@ -1204,7 +1207,7 @@ def update_decert_size_graph(sel_ind):
             y=size,
             line=dict(width=4),
             marker=dict(color='#FFDA67', size=10),
-            hovertemplate="%{x}: %{y}<extra></extra>"),
+            hovertemplate="<b>%{x} year(s):</b> %{y} employees<extra></extra>"),
         layout=go.Layout(
             margin={'l': 10, 'r': 10, 't': 10, 'b': 10},
             template='simple_white',
