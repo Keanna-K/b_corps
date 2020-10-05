@@ -49,23 +49,9 @@ companies = sorted(df.company_name.unique())
 start_years = ['Total', 2007, 2008, 2009, 2010, 2011, 2012, 
                2013, 2014, 2015, 2016, 2017]
 
-# global b corporations
-global_df = pd.read_csv("data/all_bcorps.csv")
+# Global B Corps - with in-between years
+global_df = pd.read_csv("data/all_years_bcorps.csv")
 countries = sorted(global_df.country.unique())
-
-# Create dataset with in-between years
-all_years_df = global_df.copy()
-for company in all_years_df.company_name.unique():
-    new_df = all_years_df[all_years_df.company_name == company]
-    year_list = list(new_df.certified_years)
-    if len(year_list) > 0:
-        all_year_list = [x for x in range(min(year_list), max(year_list))]
-        missing_years = [x for x in all_year_list if x not in year_list]
-        for x in missing_years:
-            fill = max([year for year in year_list if year < x])
-            new_row = new_df[new_df.certified_years == fill]
-            new_row.certified_years = x
-            all_years_df = all_years_df.append(new_row, ignore_index=True)
 
 ###############################################################################
 # LAYOUT                                                                      #
@@ -1046,7 +1032,7 @@ def update_growth_graph(sel_country):
 )
 def update_avgscore_graph(sel_ind, sel_years):
 
-    new_df = all_years_df[all_years_df.certified_years >= 0]
+    new_df = global_df[global_df.certified_years >= 0]
 
     if sel_ind:
         # filter by industry
@@ -1153,7 +1139,7 @@ def update_totalyears_graph(sel_ind):
 )
 def update_decert_score_graph(sel_ind):
 
-    new_df = all_years_df[all_years_df.certified_years >= 0]
+    new_df = global_df[global_df.certified_years >= 0]
     new_df = new_df[new_df.current_status == 'de-certified']
 
     if sel_ind:
@@ -1199,7 +1185,7 @@ def update_decert_score_graph(sel_ind):
 )
 def update_decert_size_graph(sel_ind):
 
-    new_df = all_years_df[all_years_df.certified_years >= 0]
+    new_df = global_df[global_df.certified_years >= 0]
     new_df = new_df[new_df.current_status == 'de-certified']
 
     if sel_ind:
